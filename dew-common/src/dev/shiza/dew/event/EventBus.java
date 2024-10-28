@@ -11,7 +11,8 @@ public sealed interface EventBus permits EventBusImpl {
   EventBus publisher(final EventPublisher eventPublisher);
 
   @Contract("_, _ -> this")
-  <T> EventBus result(final Class<T> resultType, final ResultHandler<T> resultHandler);
+  <E extends Event, T> EventBus result(
+      final Class<T> resultType, final ResultHandler<E, T> resultHandler);
 
   void subscribe(final Subscriber subscriber) throws SubscribingException;
 

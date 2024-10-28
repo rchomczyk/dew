@@ -28,7 +28,8 @@ final class EventBusImpl implements EventBus {
   }
 
   @Override
-  public <T> EventBus result(final Class<T> resultType, final ResultHandler<T> resultHandler) {
+  public <E extends Event, T> EventBus result(
+      final Class<T> resultType, final ResultHandler<E, T> resultHandler) {
     resultHandlerFacade.register(resultType, resultHandler);
     return this;
   }
@@ -77,7 +78,8 @@ final class EventBusImpl implements EventBus {
   private void notifySubscribedMethods(
       final MethodHandle invocation, final Subscriber subscriber, final Event event) {
     try {
-      resultHandlerFacade.process(invocation.invoke(subscriber, event));
+      final Object returnedValue = invocation.invoke(subscriber, event);
+      resultHandlerFacade.process(event, returnedValue);
     } catch (final Throwable exception) {
       throw new EventPublishingException(
           "Could not publish event, because of unexpected exception during method invocation.",

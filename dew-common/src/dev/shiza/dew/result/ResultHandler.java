@@ -1,6 +1,8 @@
 package dev.shiza.dew.result;
 
-public interface ResultHandler<T> {
+import dev.shiza.dew.event.Event;
 
-  void handle(final T result);
+public interface ResultHandler<E extends Event, T> {
+
+  void handle(final E event, final T result);
 }
