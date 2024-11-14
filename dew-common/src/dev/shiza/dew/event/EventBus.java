@@ -1,6 +1,6 @@
 package dev.shiza.dew.event;
 
-import dev.shiza.dew.result.ResultHandler;
+import dev.shiza.dew.result.ResultProcessor;
 import dev.shiza.dew.subscription.Subscriber;
 import dev.shiza.dew.subscription.SubscribingException;
 import org.jetbrains.annotations.Contract;
@@ -12,7 +12,7 @@ public sealed interface EventBus permits EventBusImpl {
 
   @Contract("_, _ -> this")
   <E extends Event, T> EventBus result(
-      final Class<T> resultType, final ResultHandler<E, T> resultHandler);
+      final Class<T> resultType, final ResultProcessor<E, T> resultProcessor);
 
   void subscribe(final Subscriber subscriber) throws SubscribingException;
 

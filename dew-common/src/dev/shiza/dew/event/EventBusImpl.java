@@ -1,7 +1,8 @@
 package dev.shiza.dew.event;
 
-import dev.shiza.dew.result.ResultHandler;
-import dev.shiza.dew.result.ResultHandlerFacade;
+import dev.shiza.dew.result.ResultProcessor;
+import dev.shiza.dew.result.ResultProcessorFacade;
+import dev.shiza.dew.result.registry.ResultProcessorRegistry;
 import dev.shiza.dew.subscription.Subscriber;
 import dev.shiza.dew.subscription.Subscription;
 import dev.shiza.dew.subscription.SubscriptionFacade;
@@ -12,13 +13,17 @@ import java.util.Set;
 final class EventBusImpl implements EventBus {
 
   private final SubscriptionFacade subscriptionFacade;
-  private final ResultHandlerFacade resultHandlerFacade;
+  private final ResultProcessorFacade resultProcessorFacade;
+  private final ResultProcessorRegistry resultProcessorRegistry;
   private EventPublisher eventPublisher;
 
   EventBusImpl(
-      final SubscriptionFacade subscriptionFacade, final ResultHandlerFacade resultHandlerFacade) {
+      final SubscriptionFacade subscriptionFacade,
+      final ResultProcessorFacade resultProcessorFacade,
+      final ResultProcessorRegistry resultProcessorRegistry) {
     this.subscriptionFacade = subscriptionFacade;
-    this.resultHandlerFacade = resultHandlerFacade;
+    this.resultProcessorFacade = resultProcessorFacade;
+    this.resultProcessorRegistry = resultProcessorRegistry;
   }
 
   @Override
@@ -29,8 +34,8 @@ final class EventBusImpl implements EventBus {
 
   @Override
   public <E extends Event, T> EventBus result(
-      final Class<T> resultType, final ResultHandler<E, T> resultHandler) {
-    resultHandlerFacade.register(resultType, resultHandler);
+      final Class<T> resultType, final ResultProcessor<E, T> resultProcessor) {
+    resultProcessorRegistry.register(resultType, resultProcessor);
     return this;
   }
 
@@ -79,7 +84,9 @@ final class EventBusImpl implements EventBus {
       final MethodHandle invocation, final Subscriber subscriber, final Event event) {
     try {
       final Object returnedValue = invocation.invoke(subscriber, event);
-      resultHandlerFacade.process(event, returnedValue);
+      if (returnedValue != null && resultProcessorRegistry.isProcessingRequired()) {
+        resultProcessorFacade.tryProcessing(event, returnedValue);
+      }
     } catch (final Throwable exception) {
       throw new EventPublishingException(
           "Could not publish event, because of unexpected exception during method invocation.",
