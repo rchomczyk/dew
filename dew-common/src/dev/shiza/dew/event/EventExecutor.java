@@ -1,7 +1,7 @@
 package dev.shiza.dew.event;
 
 @FunctionalInterface
-public interface EventPublisher {
+public interface EventExecutor {
 
   void execute(final Runnable task);
 }

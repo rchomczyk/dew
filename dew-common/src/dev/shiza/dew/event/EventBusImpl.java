@@ -1,6 +1,5 @@
 package dev.shiza.dew.event;
 
-import dev.shiza.dew.result.ResultProcessor;
 import dev.shiza.dew.result.ResultProcessorFacade;
 import dev.shiza.dew.result.registry.ResultProcessorRegistry;
 import dev.shiza.dew.subscription.Subscriber;
@@ -15,28 +14,17 @@ final class EventBusImpl implements EventBus {
   private final SubscriptionFacade subscriptionFacade;
   private final ResultProcessorFacade resultProcessorFacade;
   private final ResultProcessorRegistry resultProcessorRegistry;
-  private EventPublisher eventPublisher;
+  private final EventExecutor eventExecutor;
 
   EventBusImpl(
       final SubscriptionFacade subscriptionFacade,
       final ResultProcessorFacade resultProcessorFacade,
-      final ResultProcessorRegistry resultProcessorRegistry) {
+      final ResultProcessorRegistry resultProcessorRegistry,
+      final EventExecutor eventExecutor) {
     this.subscriptionFacade = subscriptionFacade;
     this.resultProcessorFacade = resultProcessorFacade;
     this.resultProcessorRegistry = resultProcessorRegistry;
-  }
-
-  @Override
-  public EventBus publisher(final EventPublisher eventPublisher) {
-    this.eventPublisher = eventPublisher;
-    return this;
-  }
-
-  @Override
-  public <E extends Event, T> EventBus result(
-      final Class<T> resultType, final ResultProcessor<E, T> resultProcessor) {
-    resultProcessorRegistry.register(resultType, resultProcessor);
-    return this;
+    this.eventExecutor = eventExecutor;
   }
 
   @Override
@@ -45,29 +33,28 @@ final class EventBusImpl implements EventBus {
   }
 
   @Override
-  public void publish(
-      final EventPublisher eventPublisher, final Event event, final String... targets)
+  public void publish(final EventExecutor eventExecutor, final Event event, final String... targets)
       throws EventPublishingException {
     final Set<Subscription> subscriptions =
         subscriptionFacade.getSubscriptionsByEventType(event.getClass());
     for (final Subscription subscription : subscriptions) {
-      notifySubscription(subscription, eventPublisher, event, targets);
+      notifySubscription(subscription, eventExecutor, event, targets);
     }
   }
 
   @Override
   public void publish(final Event event, final String... targets) {
-    if (eventPublisher == null) {
+    if (eventExecutor == null) {
       throw new EventPublishingException(
           "Could not publish event, because of not specifying default event publisher.");
     }
 
-    publish(eventPublisher, event, targets);
+    publish(eventExecutor, event, targets);
   }
 
   private void notifySubscription(
       final Subscription subscription,
-      final EventPublisher eventPublisher,
+      final EventExecutor eventExecutor,
       final Event event,
       final String[] targets) {
     final Subscriber subscriber = subscription.subscriber();
@@ -76,7 +63,7 @@ final class EventBusImpl implements EventBus {
     }
 
     for (final MethodHandle invocation : subscription.invocations()) {
-      eventPublisher.execute(() -> notifySubscribedMethods(invocation, subscriber, event));
+      eventExecutor.execute(() -> notifySubscribedMethods(invocation, subscriber, event));
     }
   }
 
