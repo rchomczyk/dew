@@ -3,6 +3,7 @@ package dev.shiza.dew.result;
 import dev.shiza.dew.event.Event;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.CompletableFuture;
 
 final class ResultHandlerService implements ResultHandlerFacade {
 
@@ -24,6 +25,12 @@ final class ResultHandlerService implements ResultHandlerFacade {
       return;
     }
 
+    final Class<?> resultType = value.getClass();
+    if (resultType == CompletableFuture.class) {
+      processPromise((CompletableFuture<?>) value, event);
+      return;
+    }
+
     final ResultHandler<?, ?> resultHandler = getResultHandler(value.getClass());
     if (resultHandler == null) {
       throw new ResultHandlingException(
@@ -32,6 +39,19 @@ final class ResultHandlerService implements ResultHandlerFacade {
     }
 
     ((ResultHandler<E, T>) resultHandler).handle(event, value);
+  }
+
+  private <E extends Event, T> void processPromise(
+      final CompletableFuture<T> resultFuture, final E event) {
+    resultFuture
+        .whenComplete((result, cause) -> process(event, result))
+        .exceptionally(
+            cause -> {
+              throw new ResultHandlingException(
+                  "Could not handle result of type %s, because of an exception."
+                      .formatted(cause.getClass().getName()),
+                  cause);
+            });
   }
 
   private ResultHandler<?, ?> getResultHandler(final Class<?> clazz) {
