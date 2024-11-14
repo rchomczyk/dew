@@ -7,8 +7,5 @@ public sealed interface EventBus permits EventBusImpl {
 
   void subscribe(final Subscriber subscriber) throws SubscribingException;
 
-  void publish(final EventExecutor eventExecutor, final Event event, final String... targets)
-      throws EventPublishingException;
-
   void publish(final Event event, final String... targets) throws EventPublishingException;
 }

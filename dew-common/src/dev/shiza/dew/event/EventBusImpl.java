@@ -33,30 +33,16 @@ final class EventBusImpl implements EventBus {
   }
 
   @Override
-  public void publish(final EventExecutor eventExecutor, final Event event, final String... targets)
-      throws EventPublishingException {
+  public void publish(final Event event, final String... targets) {
     final Set<Subscription> subscriptions =
         subscriptionFacade.getSubscriptionsByEventType(event.getClass());
     for (final Subscription subscription : subscriptions) {
-      notifySubscription(subscription, eventExecutor, event, targets);
+      notifySubscription(subscription, event, targets);
     }
-  }
-
-  @Override
-  public void publish(final Event event, final String... targets) {
-    if (eventExecutor == null) {
-      throw new EventPublishingException(
-          "Could not publish event, because of not specifying default event publisher.");
-    }
-
-    publish(eventExecutor, event, targets);
   }
 
   private void notifySubscription(
-      final Subscription subscription,
-      final EventExecutor eventExecutor,
-      final Event event,
-      final String[] targets) {
+      final Subscription subscription, final Event event, final String[] targets) {
     final Subscriber subscriber = subscription.subscriber();
     if (hasSpecifiedTarget(targets) && isExcludedSubscription(subscriber, targets)) {
       return;
