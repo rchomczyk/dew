@@ -2,7 +2,7 @@ package dev.shiza.dew.subscription;
 
 public interface Subscriber {
 
-  default String identity() {
+  default String topic() {
     return null;
   }
 }

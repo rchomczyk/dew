@@ -33,18 +33,18 @@ final class EventBusImpl implements EventBus {
   }
 
   @Override
-  public void publish(final Event event, final String... targets) {
+  public void publish(final Event event, final String... topics) {
     final Set<Subscription> subscriptions =
         subscriptionFacade.getSubscriptionsByEventType(event.getClass());
     for (final Subscription subscription : subscriptions) {
-      notifySubscription(subscription, event, targets);
+      notifySubscription(subscription, event, topics);
     }
   }
 
   private void notifySubscription(
-      final Subscription subscription, final Event event, final String[] targets) {
+      final Subscription subscription, final Event event, final String[] topics) {
     final Subscriber subscriber = subscription.subscriber();
-    if (hasSpecifiedTarget(targets) && isExcludedSubscription(subscriber, targets)) {
+    if (hasSpecifiedTopic(topics) && isExcludedSubscription(subscriber, topics)) {
       return;
     }
 
@@ -67,11 +67,11 @@ final class EventBusImpl implements EventBus {
     }
   }
 
-  private boolean hasSpecifiedTarget(final String[] targets) {
-    return targets.length > 0;
+  private boolean hasSpecifiedTopic(final String[] topics) {
+    return topics.length > 0;
   }
 
-  private boolean isExcludedSubscription(final Subscriber subscriber, final String[] targets) {
-    return Arrays.stream(targets).noneMatch(identity -> subscriber.identity().equals(identity));
+  private boolean isExcludedSubscription(final Subscriber subscriber, final String[] topics) {
+    return Arrays.stream(topics).noneMatch(topic -> subscriber.topic().equals(topic));
   }
 }
